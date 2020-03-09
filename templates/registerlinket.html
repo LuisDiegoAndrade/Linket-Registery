@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block content %}
+    <div class="content-section">
+        <form id="registerlinket">
+
+            <fieldset class="form-group">
+                <legend class="border-bottom mb-4">Enter a Linket</legend>
+                <div class="form-group">
+                    <input class="form-control form-control-lg" id="linket" name="linket" required="" type="text" value="">
+                        <div id="error" style="display: none" class="invalid-feedback">
+                                <span>That linket is taken!</span>
+                        </div>
+                </div>
+
+
+
+            </fieldset>
+            <div class="form-group">
+                <input disbaled=false class="btn btn-outline-info" id="submitBtn" name="submit" type="submit" value="Search">
+            </div>
+        </form>
+
+        <div style="display: none;" id="results" class="content-section">
+              <h3 id="displayLinketSelected"></h3>
+
+
+              <form id="confirmNewLinket">
+
+                  <fieldset class="form-group">
+                    <input style="display: none;" class="form-control form-control-lg" id="confirmData" name="newLinketlinket" required="" type="text" value="">
+
+                  </fieldset>
+                  <div class="form-group">
+                      <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Register Linket">
+                  </div>
+              </form>
+        </div>
+    </div>
+
+{% endblock content %}

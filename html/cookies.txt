@@ -1,0 +1,4 @@
+# HTTrack Website Copier Cookie File
+# This file format is compatible with Netscape cookies
+linket.info	TRUE	/	FALSE	1999999999	PHPSESSID	9045a06d32b19eeda36e7dd776fe54d0
+
