@@ -21,13 +21,8 @@ form.addEventListener('submit', (e) =>{
       case 1:
         let results = document.getElementById('results');
         results.style.display = 'block';
-        localStorage.setItem('newlinket', data.get('newlinket'));
         document.getElementById('displayLinketSelected').textContent = data.get('linket');
-        let confirmLinket = document.getElementById('confirmData');
-        confirmlinket.addEventListener('submit', (e) => {
-          let confirmData = new FormData(confirmLinket);
-          confirmData.set('newlinket', data.get('newlinket'));
-        });
+        document.getElementById('confirmData').value = data.get('linket');
         break;
 
     }

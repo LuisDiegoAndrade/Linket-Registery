@@ -190,7 +190,7 @@ def add_new_linket():
                 return render_template('takenlinket.html')
 
 
-            newLinket = Users(linketBare=request.form['newlinket'],
+            newLinket = Linkets(linketBare=request.form['newlinket'],
                            owner_id=current_user.username
                            )
 
