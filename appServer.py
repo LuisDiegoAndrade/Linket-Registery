@@ -62,6 +62,9 @@ def load_user(userInputEmail):
     return Users.query.filter_by(email=userInputEmail).first()
 #~~~~~~~~~~~
 
+@app.route('/')
+def index():
+    return redirect(url_for('register'))
 
 ##################~~~Signup~~~####################
 @app.route('/signup', methods= ['GET', 'POST'])
