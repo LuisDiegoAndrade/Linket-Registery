@@ -191,7 +191,7 @@ def add_new_linket():
 
 
             newLinket = Linkets(linketBare=request.form['newlinket'],
-                           owner_id=current_user.username
+                           owner_id=current_user.id
                            )
 
             db.session.add(newLinket)
