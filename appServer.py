@@ -7,7 +7,9 @@ from flask_cors import CORS
 import jwt
 import datetime
 import json
+import re
 from Forms import SignUpForm, LoginForm
+from linketvalidator import clean_whitespace, is_allowed
 
 app = Flask(__name__)
 CORS(app, resources = r'/api/*')
@@ -161,11 +163,13 @@ def register_linket():
         if request.form['linket']:
 
             #print(request.form['linket'])
-
             check = Linkets.query.filter_by(linketBare=request.form['linket']).first()
-            print(check)
 
             if (check):
+                return json.dumps({'status': 0})
+
+            stripped = clean_whitespace(request.form['linket'])
+            if not is_allowed(stripped):
                 return json.dumps({'status': 0})
 
 
@@ -192,6 +196,9 @@ def add_new_linket():
             if (check):
                 return render_template('takenlinket.html')
 
+            stripped = clean_whitespace(request.form['linket'])
+            if not is_allowed(stripped):
+                return json.dumps({'status': 0})
 
             newLinket = Linkets(linketBare=request.form['newlinket'],
                            owner_id=current_user.id
