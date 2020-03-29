@@ -20,13 +20,16 @@ CORS(app, resources = r'/api/*')
 # >>> secrets.token_hex(16)
 # >>> a65643b9b52d637a11b3182e923e5703
 app.config["SECRET_KEY"] = 'f91ed5f95371fd892dadab02fa26c871'
-login_manager = LoginManager()
-login_manager.init_app(app)
-
 #Using SQLite for development
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linket.db'
 
+#Flask-Login class helper
+#Lets you "decorate" functions/routes
+login_manager = LoginManager()
+login_manager.init_app(app)
+
 db = SQLAlchemy(app)
+
 ###***** Users Table ******###
 class Users(UserMixin, db.Model):
     __tablename__ = "Users"
@@ -43,7 +46,7 @@ class Users(UserMixin, db.Model):
     def get_id(self):
         return self.email
 
-
+###***** Linkets Table ******###
 class Linkets(UserMixin, db.Model):
     __tablename__ = "Linkets"
     id = db.Column(db.Integer, primary_key=True)
@@ -59,14 +62,17 @@ class Linkets(UserMixin, db.Model):
 ###***** Users Table ******###
 
 #~~~~~~~~~~
+#look for a user in users table via email
 @login_manager.user_loader
 def load_user(userInputEmail):
     return Users.query.filter_by(email=userInputEmail).first()
 #~~~~~~~~~~~
 
+#"root" path; index; home
 @app.route('/')
 def index():
     return redirect(url_for('register'))
+
 
 ##################~~~Signup~~~####################
 @app.route('/signup', methods= ['GET', 'POST'])
@@ -112,11 +118,16 @@ def register():
         return render_template('signup.html', form=form)
 ##################~~~Signup END~~~####################
 
+
+##################~~~Logout ~~~####################
 @app.route("/signout")
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('login'))
+##################~~~Logout ~~~####################
+
+
 ##################~~~Login ~~~####################
 @app.route('/login', methods= ['GET', 'POST'])
 def login():
@@ -196,7 +207,7 @@ def add_new_linket():
             if (check):
                 return render_template('takenlinket.html')
 
-            stripped = clean_whitespace(request.form['linket'])
+            stripped = clean_whitespace(request.form['newlinket'])
             if not is_allowed(stripped):
                 return json.dumps({'status': 0})
 
