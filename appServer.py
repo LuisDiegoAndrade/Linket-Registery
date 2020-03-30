@@ -50,6 +50,7 @@ class Users(UserMixin, db.Model):
 class Linkets(UserMixin, db.Model):
     __tablename__ = "Linkets"
     id = db.Column(db.Integer, primary_key=True)
+    linket = db.Column(db.String(68), nullable=True)
     linketBare = db.Column(db.String(68), nullable=True)
     timeStamp = db.Column(db.DateTime, nullable=False,
         default=datetime.datetime.utcnow)
@@ -173,8 +174,10 @@ def register_linket():
     if request.method == "POST":
         if request.form['linket']:
 
+
+            requestLinket = clean_whitespace(request.form['linket'].lower())
             #print(request.form['linket'])
-            check = Linkets.query.filter_by(linketBare=request.form['linket']).first()
+            check = Linkets.query.filter_by(linketBare=requestLinket).first()
 
             if (check):
                 return json.dumps({'status': 0})
@@ -200,8 +203,9 @@ def add_new_linket():
         if request.form['newlinket']:
 
             #print(request.form['linket'])
+            requestLinket = clean_whitespace(request.form['newlinket'].lower())
 
-            check = Linkets.query.filter_by(linketBare=request.form['newlinket']).first()
+            check = Linkets.query.filter_by(linketBare=requestLinket).first()
             print(check)
 
             if (check):
@@ -211,7 +215,8 @@ def add_new_linket():
             if not is_allowed(stripped):
                 return json.dumps({'status': 0})
 
-            newLinket = Linkets(linketBare=request.form['newlinket'],
+            newLinket = Linkets( linket = clean_whitespace(request.form['newlinket']),
+                           linketBare=requestLinket,
                            owner_id=current_user.id
                            )
 
