@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_socketio import SocketIO, emit, send, join_room,leave_room, disconnect
 from flask_sqlalchemy import SQLAlchemy
 from flask import request, Response, render_template, redirect, url_for, flash, session
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -13,6 +14,7 @@ from linketvalidator import clean_whitespace, is_allowed
 
 app = Flask(__name__)
 CORS(app, resources = r'/api/*')
+socketio = SocketIO(app)
 
 #Token generated using python interpreter:
 # $ python
@@ -20,6 +22,7 @@ CORS(app, resources = r'/api/*')
 # >>> secrets.token_hex(16)
 # >>> a65643b9b52d637a11b3182e923e5703
 app.config["SECRET_KEY"] = 'f91ed5f95371fd892dadab02fa26c871'
+
 #Using SQLite for development
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linket.db'
 
@@ -230,6 +233,50 @@ def add_new_linket():
     return render_template('successforlinket.html')
 
 
+##########~~~WebRTC: Signaling Implementation~~~###########
+
+''' Store connections in a list for reference. '''
+peersList = []
+
+# I can use this OR do this when a client emits a disconect event
+# This might change as the front end evolves
+def remove_duplicate_peer(un):
+    for user in peersList:
+        if user['username'] == un:
+            peersList.pop(user)
+
+
+
+
+@socketio.on('New Connection')
+def new_connection(data):
+    # if somehow an unauthenticated user connects to the WS server, disconnect.
+    if not current_user.is_authenticated:
+        disconnect()
+        return redirect(url_for('login'))
+
+    data = json.loads(data)
+
+    remove_duplicate_peer(current_user.username)
+
+    peersList.append(
+        {"username": current_user.username, "sid": request.sid, "status": data['status']}
+    )
+
+
+''' Route messages to appropiate peer(s). '''
+''' It would be cool if python had a switch statement...'''
+@socketio.on('message')
+def handle_msg(data):
+    # if somehow an unauthenticated user connects to the WS server, disconnect.
+    if not current_user.is_authenticated:
+        disconnect()
+        return redirect(url_for('login'))
+
+    data = json.loads(data)
+
+
+
 
 
 @app.route("/api/data")
@@ -251,7 +298,7 @@ def link():
     return html
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port="7777")
+    socketio.run(app, host="0.0.0.0", port="7777", ssl_context='adhoc')
 
 '''
 !!!!references!!!!

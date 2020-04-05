@@ -20,6 +20,10 @@
     {% else %}
         <title>[Linket]</title>
     {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js" integrity="sha256-bQmrZe4yPnQrLTY+1gYylfNMBuGfnT/HKsCGX+9Xuqo=" crossorigin="anonymous"></script>
+    {% endif %}
 </head>
 <body>
     <header class="site-header">
@@ -110,9 +114,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     {% if current_user.is_authenticated %}
-      <script src="{{url_for("static", filename="app.js")}}">
+      <script src="{{url_for("static", filename="app.js")}}"></script>
+    {% endif %}
+
+    <!-- This script will be moved to appropiate path once finsished -->
+    {% if current_user.is_authenticated %}
+      <script>
 
 
+      let socket = io(window.location.protocol + "//" + window.location.hostname + ":" + window.location.port);
+
+      socket.on('connect', () => {
+        console.log("Connected to WS server!");
+
+        // Add UI to allow "active / inactive" status
+        //For now all connections are in an "active" state
+        socket.emit("New Connection", JSON.stringify( {status: "active"} ) );
+      });
 
       </script>
     {% endif %}
