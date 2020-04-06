@@ -117,20 +117,93 @@
       <script src="{{url_for("static", filename="app.js")}}"></script>
     {% endif %}
 
-    <!-- This script will be moved to appropiate path once finsished -->
+    <!-- This script will be moved to an appropiate path once finsished -->
     {% if current_user.is_authenticated %}
       <script>
 
 
-      let socket = io(window.location.protocol + "//" + window.location.hostname + ":" + window.location.port);
+        let targetedUser = null;
 
-      socket.on('connect', () => {
-        console.log("Connected to WS server!");
+        function messageServer(msgObj){
+          socket.send(JSON.stringify(msgObj));
+        }
 
-        // Add UI to allow "active / inactive" status
-        //For now all connections are in an "active" state
-        socket.emit("New Connection", JSON.stringify( {status: "active"} ) );
-      });
+        async function makePeerConnection() {
+          let pc = new RTCPeerConnection( {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]} );
+          pc.onicecandidate = handleICECandidateEvent;
+          //pc.oniceconnectionstatechange = #Add E.H if needed;
+          //pc.onicegatheringstatechange = # Add E.H if needed;
+          pc.onsignalingstatechange = handleSignalingStateChangeEvent;
+          pc.onnegotiationneeded = handleNegotiationNeededEvent;
+        }
+
+        function handleICECandidateEvent(e) {
+            if (e.candidate) {
+              console.log(e.candidate);
+              messageServer( {type: "new-ice-candidate", target: targetedUser, candidate: e.candidate} );
+            }
+        }
+
+        async function handleNegotiationNeededEvent() {
+          try {
+
+            const offer = await pc.createOffer();
+
+            if (pc.signalingState != "stable") {
+              console.log("Connection is not stable yet.")
+              return;
+            }
+
+            await pc.setLocalDescription(offer);
+
+
+          } catch(err){
+            console.log(error);
+          };
+        }
+
+
+        let socket = io(window.location.protocol + "//" + window.location.hostname + ":" + window.location.port);
+        socket.on('connect', () => {
+          console.log("Connected to WS server!");
+
+          // Add UI to allow "active / inactive" status
+          //For now all connections are in an "active" state
+          //Let the server know who you are
+          socket.emit("New Connection", JSON.stringify( {status: "active"} ) );
+        });
+
+
+
+        //Handle messages from ws server
+        socket.on('message', (data) => {
+          data = JSON.parse(data);
+
+          switch (data.type) {
+            case 'channel-offer':
+              console.log(data.message);
+              break;
+
+            case 'channel-answer':
+              console.log(data.message);
+              break;
+
+            case 'new-ice-candidate':
+              console.log(data.message);
+              break;
+
+          }
+        });
+
+        let connect = document.getElementById('msgServer');
+        connect.addEventListener('submit', (e) => {
+          e.preventDefault();
+
+          let data = new FormData(connect);
+          target = data.get('target');
+          // create p.c.
+
+        });
 
       </script>
     {% endif %}

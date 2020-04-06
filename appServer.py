@@ -172,12 +172,8 @@ def dashboard_home():
 @app.route('/dashboard/registerlinket', methods= ['GET', 'POST'])
 @login_required
 def register_linket():
-
-
     if request.method == "POST":
         if request.form['linket']:
-
-
             requestLinket = clean_whitespace(request.form['linket'].lower())
             #print(request.form['linket'])
             check = Linkets.query.filter_by(linketBare=requestLinket).first()
@@ -188,7 +184,6 @@ def register_linket():
             stripped = clean_whitespace(request.form['linket'])
             if not is_allowed(stripped):
                 return json.dumps({'status': 0})
-
 
             print(request.form['linket'])
             return json.dumps({'status': 1})
@@ -238,14 +233,11 @@ def add_new_linket():
 ''' Store connections in a list for reference. '''
 peersList = []
 
-# I can use this OR do this when a client emits a disconect event
 # This might change as the front end evolves
 def remove_duplicate_peer(un):
     for user in peersList:
         if user['username'] == un:
             peersList.pop(user)
-
-
 
 
 @socketio.on('New Connection')
@@ -265,7 +257,9 @@ def new_connection(data):
 
 
 ''' Route messages to appropiate peer(s). '''
-''' It would be cool if python had a switch statement...'''
+''' Note that the server doesn't have to know what these messages are.'''
+''' We just need to relay it too a specific user. '''
+
 @socketio.on('message')
 def handle_msg(data):
     # if somehow an unauthenticated user connects to the WS server, disconnect.
@@ -274,9 +268,13 @@ def handle_msg(data):
         return redirect(url_for('login'))
 
     data = json.loads(data)
+    # look for target peer in peersList, once found pass
+    # peers sid to room argument
+    # if not found return an error message
 
-
-
+    for user in peersList:
+        if user["username"] == data['target']:
+            send(json.dumps(data), room=user["sid"])
 
 
 @app.route("/api/data")
