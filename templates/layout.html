@@ -123,13 +123,14 @@
 
 
         let targetedUser = null;
+        let pc = null;
 
         function messageServer(msgObj){
           socket.send(JSON.stringify(msgObj));
         }
 
         async function makePeerConnection() {
-          let pc = new RTCPeerConnection( {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]} );
+          pc = new RTCPeerConnection( {"iceServers": [{"url": "stun:stun.l.google.com:19302"}]} );
           pc.onicecandidate = handleICECandidateEvent;
           //pc.oniceconnectionstatechange = #Add E.H if needed;
           //pc.onicegatheringstatechange = # Add E.H if needed;
@@ -137,12 +138,6 @@
           pc.onnegotiationneeded = handleNegotiationNeededEvent;
         }
 
-        function handleICECandidateEvent(e) {
-            if (e.candidate) {
-              console.log(e.candidate);
-              messageServer( {type: "new-ice-candidate", target: targetedUser, candidate: e.candidate} );
-            }
-        }
 
         async function handleNegotiationNeededEvent() {
           try {
@@ -156,10 +151,19 @@
 
             await pc.setLocalDescription(offer);
 
+            messageServer( {type: "channel-offer", sender: "Luis", target: targetedUser, sdp: pc.localDescription} );
+
 
           } catch(err){
             console.log(error);
           };
+        }
+
+        function handleICECandidateEvent(e) {
+            if (e.candidate) {
+              console.log(e.candidate);
+              messageServer( {type: "new-ice-candidate", target: targetedUser, candidate: e.candidate} );
+            }
         }
 
 
@@ -181,15 +185,16 @@
 
           switch (data.type) {
             case 'channel-offer':
-              console.log(data.message);
+              handleChannelOffer(data);
               break;
 
             case 'channel-answer':
-              console.log(data.message);
+              handleChannelAnswer(data);
               break;
 
             case 'new-ice-candidate':
-              console.log(data.message);
+
+              //
               break;
 
           }
@@ -201,7 +206,7 @@
 
           let data = new FormData(connect);
           target = data.get('target');
-          // create p.c.
+          makePeerConnection();
 
         });
 
