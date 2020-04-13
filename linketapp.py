@@ -109,7 +109,7 @@ def register():
 
 
         if Users.query.filter_by(username=request.form['username']).first():
-            flash(f'That username is taken! Select another.', 'danger')
+            flash('That username is taken! Select another.', 'danger')
             return redirect(url_for('register'))
 
         if Users.query.filter_by(email=request.form['email']).first():
