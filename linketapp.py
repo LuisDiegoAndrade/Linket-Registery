@@ -156,6 +156,14 @@ def login():
     return render_template('login.html', form=form)
 ##################~~~Login END~~~####################
 
+@app.route("/getusername", methods= ['GET', 'POST'])
+@login_required
+def get_username():
+    if request.method == "POST":
+        return json.dumps({"username": current_user.username})
+    else:
+        return redirect(url_for('dashboard_home'))
+
 @app.route("/dashboard")
 @login_required
 def dashboard_home():
@@ -237,7 +245,7 @@ peersList = []
 def remove_duplicate_peer(un):
     for user in peersList:
         if user['username'] == un:
-            peersList.pop(user)
+            peersList.pop(peersList.index(user))
 
 
 @socketio.on('New Connection')
@@ -254,6 +262,7 @@ def new_connection(data):
     peersList.append(
         {"username": current_user.username, "sid": request.sid, "status": data['status']}
     )
+    print(peersList)
 
 
 ''' Route messages to appropiate peer(s). '''
@@ -267,13 +276,16 @@ def handle_msg(data):
         disconnect()
         return redirect(url_for('login'))
 
+    print("Transporting message!")
     data = json.loads(data)
     # look for target peer in peersList, once found pass
     # peers sid to room argument
     # if not found return an error message
+    print(data)
 
     for user in peersList:
         if user["username"] == data['target']:
+            print("Found user!")
             send(json.dumps(data), room=user["sid"])
 
 
