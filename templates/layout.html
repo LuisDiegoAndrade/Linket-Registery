@@ -253,6 +253,8 @@
                 msg.setAttribute('class', 'alert alert-info alert-dismissible');
                 msg.textContent = data.get('msg');
                 document.getElementById('chatBox').appendChild(msg);
+                document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+                chat.reset();
 
               });
 
@@ -271,11 +273,12 @@
         }
 
         function receiveMessage(event) {
-          alert("Peer says: " + event.data);
+          //alert("Peer says: " + event.data);
           let msg = document.createElement('p');
           msg.setAttribute('class', 'alert alert-danger');
           msg.textContent = event.data;
           document.getElementById('chatBox').appendChild(msg);
+          document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
 
         }
 
@@ -294,6 +297,8 @@
               msg.setAttribute('class', 'alert alert-info alert-dismissible');
               msg.textContent = data.get('msg');
               document.getElementById('chatBox').appendChild(msg);
+              document.getElementById('chatBox').scrollTop = document.getElementById('chatBox').scrollHeight;
+              chat.reset();
 
             });
           }
