@@ -81,6 +81,8 @@ def index():
 ##################~~~Signup~~~####################
 @app.route('/signup', methods= ['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard_home"))
 
     form = SignUpForm()
 
@@ -135,6 +137,8 @@ def logout():
 ##################~~~Login ~~~####################
 @app.route('/login', methods= ['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard_home"))
     form = LoginForm()
     if request.method == "POST":
         if not Users.query.filter_by(email=request.form['email']).first():

@@ -179,12 +179,15 @@
         }
 
         async function handleChannelOffer(msg) {
-          alert("Somebody wants to connect! (" + msg.sender + ")");
+          if (!window.confirm("Connect to " + msg.sender + "?")) {
+            alert("Connection denied!");
+            return;
+          }
           if(!pc) {
             makePeerConnection();
             pc.ondatachannel = receiveChannelCallback;
-
           }
+
           let description = new RTCSessionDescription(msg.sdp);
 
           // If the connection isn't stable yet, wait for it...
@@ -219,6 +222,8 @@
 
           let description = new RTCSessionDescription(msg.sdp);
           await pc.setRemoteDescription(description).catch((err) => console.log(err));
+
+
         }
 
         async function handleNewICECandidate(msg) {
@@ -236,8 +241,21 @@
           if (sending_channel){
             if(sending_channel.readyState === "open") {
               alert("Peer opened data channel!");
-              //say hello!
-              sending_channel.send("YOOOOOOOOOO");
+              document.getElementById('chat').style.display = 'block';
+              document.getElementById('connect').style.display = 'none';
+
+              let chat = document.getElementById('chat');
+              chat.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let data = new FormData(chat);
+                sending_channel.send(data.get('msg'))
+                let msg = document.createElement('p');
+                msg.setAttribute('class', 'alert alert-info alert-dismissible');
+                msg.textContent = data.get('msg');
+                document.getElementById('chatBox').appendChild(msg);
+
+              });
+
             }
             else {
               alert("Peer closed data channel!");
@@ -253,13 +271,34 @@
         }
 
         function receiveMessage(event) {
-          alert("Peer says: " + event.data)
+          alert("Peer says: " + event.data);
+          let msg = document.createElement('p');
+          msg.setAttribute('class', 'alert alert-danger');
+          msg.textContent = event.data;
+          document.getElementById('chatBox').appendChild(msg);
+
         }
 
         function handleReceiveChannelStatusChange() {
-          if (receiving_channel) {
-                  console.log("Receive channel's status has changed to " +
-                  receiving_channel.readyState);
+          if(receiving_channel.readyState === "open") {
+            alert("Ready to chat!");
+            document.getElementById('chat').style.display = 'block';
+            document.getElementById('connect').style.display = 'none';
+
+            let chat = document.getElementById('chat');
+            chat.addEventListener('submit', (e) => {
+              e.preventDefault();
+              let data = new FormData(chat);
+              receiving_channel.send(data.get('msg'));
+              let msg = document.createElement('p');
+              msg.setAttribute('class', 'alert alert-info alert-dismissible');
+              msg.textContent = data.get('msg');
+              document.getElementById('chatBox').appendChild(msg);
+
+            });
+          }
+          else {
+            alert("Peer closed data channel!");
           }
         }
 
@@ -306,12 +345,12 @@
           targetedUser = data.get('target');
           makePeerConnection();
           sending_channel = pc.createDataChannel("data-channel");
+          sending_channel.onmessage = receiveMessage;
           sending_channel.onopen = senderChannelStatusChange;
           sending_channel.onclose = senderChannelStatusChange;
 
-
-
         });
+
 
       </script>
     {% endif %}

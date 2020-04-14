@@ -192,10 +192,29 @@
    <br>
    <p class='text-muted'>Joined {{current_user.dateJoined}} </p>
 
+
    <form id="connect">
-        <h3> Connect to user</h3>
+      <h3> Connect to a user</h3>
        <fieldset class="form-group">
-         <input class="form-control form-control-lg" name="target" required="" type="text" placeholder="User">
+         <input class="form-control form-control-lg" name="target" required="" type="text" placeholder="Username">
+
+
+       </fieldset>
+       <div class="form-group">
+           <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Connect">
+       </div>
+   </form>
+
+
+
+   <form style="display:none" id="chat">
+
+        <div id="chatBox">
+
+        </div>
+        <h3> Chat </h3>
+       <fieldset class="form-group">
+         <textarea class="form-control form-control-lg" name="msg" required="" placeholder="User"> </textarea>
          <br>
 
        </fieldset>
