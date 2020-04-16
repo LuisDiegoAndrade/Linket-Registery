@@ -175,7 +175,7 @@
             <h2 class="song-name"> You have no linkets registered!</h2>
             {% endif %}
             {% for linket in myLinkets %}
-            <h3 class="artist-name"><a href="linket://deeplink">[{{linket.linketBare}}]</a></h3>
+            <h3 class="artist-name"><a href="linket://deeplink?__a={{linket.linketBare}}">[{{linket.linketBare}}]</a></h3>
             {% endfor %}
 
 
