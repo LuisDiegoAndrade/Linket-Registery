@@ -160,73 +160,73 @@
    color: #49654D;
    }
 </style>
-<div style='text-align: center' class="content-section">
-  <p class='text-muted'><a class="nav-item nav-link" href="/dashboard">{{ current_user.username }}</a></p>
-   <div id="player">
-      <div class="album">
-         <div class="heart"><i class="fas fa-heart"></i></div>
-      </div>
-      <div class="info">
 
-         <div style="padding: 10px 0px 10px 0px; overflow-y: auto; height: 70px" class="currently-playing">
-            {% if myLinkets %}
-            <h2 class="song-name"> My Linkets</h2>
-            {% else %}
-            <h2 class="song-name"> You have no linkets registered!</h2>
-            {% endif %}
-            {% for linket in myLinkets %}
-            <h3 class="artist-name"><a href="linket://deeplink?__a={{linket.linketBare}}">[{{linket.linketBare}}]</a></h3>
-            {% endfor %}
-
-
+<div class="container">
+   <div class="row">
+      <div class="col-md-8 content-section">
+         <p class='text-muted'><a class="nav-item nav-link" href="/dashboard">{{ current_user.username }}</a></p>
+         <div id="player">
+            <div class="album">
+               <div class="heart"><i class="fas fa-heart"></i></div>
+            </div>
+            <div class="info">
+               <div style="padding: 10px 0px 10px 0px; overflow-y: auto; height: 70px" class="currently-playing">
+                  {% if myLinkets %}
+                  <h2 class="song-name"> My Linkets</h2>
+                  {% else %}
+                  <h2 class="song-name"> You have no linkets registered!</h2>
+                  {% endif %}
+                  {% for linket in myLinkets %}
+                  <h3 class="artist-name">[{{linket.linketBare}}]</h3>
+                  {% endfor %}
+               </div>
+               <div class="controls">
+                  <!--<div class="option"><i class="fas fa-bars"></i></div>
+                     <div class="volume"><i class="fas fa-volume-up"></i></div>
+                     <div class="shuffle"><i class="fas fa-random"></i></div>
+                     <div class="add"><i class="fas fa-plus"></i></div>-->
+               </div>
+            </div>
          </div>
-         <div class="controls">
-            <!--<div class="option"><i class="fas fa-bars"></i></div>
-            <div class="volume"><i class="fas fa-volume-up"></i></div>
-            <div class="shuffle"><i class="fas fa-random"></i></div>
-            <div class="add"><i class="fas fa-plus"></i></div>-->
-        </div>
-
-      </div>
-   </div>
-   <br>
-   <p class='text-muted'>Joined {{current_user.dateJoined}} </p>
-
-
-   <form id="connect">
-      <h3> Connect to a user</h3>
-       <fieldset class="form-group">
-         <input class="form-control form-control-lg" name="target" required="" type="text" placeholder="Username">
-
-
-       </fieldset>
-       <div class="form-group">
-           <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Connect">
-       </div>
-   </form>
-
-
-
-   <form style="display:none" id="chat">
-
-        <div style="overflow-y: auto; max-height: 150px" id="chatBox">
-
-        </div>
-        <h3> Chat </h3>
-       <fieldset class="form-group">
-         <textarea class="form-control form-control-lg" name="msg" required="" placeholder="User"> </textarea>
          <br>
+         <p class='text-muted'>Joined {{current_user.dateJoined}} </p>
+         <form id="connect">
+            <h3> Connect to a user</h3>
+            <fieldset class="form-group">
+               <input class="form-control form-control-lg" name="target" required="" type="text" placeholder="Username">
+            </fieldset>
+            <div class="form-group">
+               <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Connect">
+            </div>
+         </form>
+         <form style="display:none" id="chat">
+            <div style="overflow-y: auto; max-height: 150px" id="chatBox">
+            </div>
+            <h3> Chat </h3>
+            <fieldset class="form-group">
+               <textarea class="form-control form-control-lg" name="msg" required="" placeholder="User"> </textarea>
+               <br>
+            </fieldset>
+            <div class="form-group">
+               <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Send message">
+            </div>
+         </form>
+      </div>
+      <div class="col-md-3">
+         <div class="content-section">
+            <br>
+            <h3>My Linkets</h3>
+            <div class="form-group">
+              <ul class="list-group">
+                 <li style="margin: 0px 0px 5px 0px" class="btn btn-outline-info" onclick="window.location ='/dashboard/registerlinket'">Get a Linket</li>
+                 <li class="btn btn-outline-info" onclick="window.location ='/dashboard/linketstation/{{current_user.username}}'">Configure my Linkets</li>
+              </ul>
+            </div>
+         </div>
+      </div>
 
-       </fieldset>
-       <div class="form-group">
-           <input disbaled=false class="btn btn-outline-info" name="submit" type="submit" value="Send message">
-       </div>
-   </form>
-
-
-
+   </div>
 </div>
-
 
 <!--<div style='text-align: left' class="content-section">
 

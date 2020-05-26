@@ -13,7 +13,13 @@ from Forms import SignUpForm, LoginForm
 from linketvalidator import clean_whitespace, is_allowed
 
 app = Flask(__name__)
+
+# We will allow cross origin resource sharing for certain endpoints; since
+# this is the backend for the web application and mobile application.
 CORS(app, resources = r'/api/*')
+
+# Make an instance of the SocketIO class, this is library that will help facilitate
+# implementing the WebSocket protocol
 socketio = SocketIO(app)
 
 #Token generated using python interpreter:
@@ -57,13 +63,22 @@ class Linkets(UserMixin, db.Model):
     linketBare = db.Column(db.String(68), nullable=True)
     timeStamp = db.Column(db.DateTime, nullable=False,
         default=datetime.datetime.utcnow)
-    appId = db.Column(db.String(32), nullable=True)
-    host = db.Column(db.String(16), nullable=True)
-    port = db.Column(db.String(16), nullable=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey('Users.id'), nullable=True)
-    owner = db.relationship('Users', foreign_keys=owner_id)
+    game = db.Column(db.String(4), nullable=False, default=0)
+    owner_username = db.Column(db.Integer, db.ForeignKey('Users.username'), nullable=True)
+    owner = db.relationship('Users', foreign_keys=owner_username)
 
-###***** Users Table ******###
+###***** Recent app installs Table ******###
+class Downloads(UserMixin, db.Model):
+    __tablename__ = "Linkets"
+    id = db.Column(db.Integer, primary_key=True)
+    linket = db.Column(db.String(68), nullable=True)
+    linketBare = db.Column(db.String(68), nullable=True)
+    timeStamp = db.Column(db.DateTime, nullable=False,
+        default=datetime.datetime.utcnow)
+    game = db.Column(db.String(4), nullable=False, default=0)
+    owner_username = db.Column(db.Integer, db.ForeignKey('Users.username'), nullable=True)
+    owner = db.relationship('Users', foreign_keys=owner_username)
+
 
 #~~~~~~~~~~
 #look for a user in users table via email
@@ -72,10 +87,10 @@ def load_user(userInputEmail):
     return Users.query.filter_by(email=userInputEmail).first()
 #~~~~~~~~~~~
 
-#"root" path; index; home
+# "root" path
 @app.route('/')
 def index():
-    return redirect(url_for('register'))
+    return redirect(url_for('login'))
 
 
 ##################~~~Signup~~~####################
@@ -97,7 +112,7 @@ def register():
         #Take to "finish making profile" one time page
         if not Users.query.filter_by(username=request.form['username']).first() and not Users.query.filter_by(email=request.form['email']).first():
             print('Query responded with None.')
-            #create a row in DataBases
+            #create a row in Users table
 
             newUser = Users(email=request.form['email'],
                            username=request.form['username'],
@@ -168,11 +183,11 @@ def get_username():
     else:
         return redirect(url_for('dashboard_home'))
 
-@app.route("/dashboard")
+@app.route('/dashboard')
 @login_required
 def dashboard_home():
     try:
-        myLinkets = Linkets.query.filter_by(owner_id=current_user.id).all()
+        myLinkets = Linkets.query.filter_by(owner_username=current_user.username).all()
         print(myLinkets)
     except:
         myLinkets = "You have no Linket(s) registered!"
@@ -227,7 +242,7 @@ def add_new_linket():
 
             newLinket = Linkets( linket = clean_whitespace(request.form['newlinket']),
                            linketBare=requestLinket,
-                           owner_id=current_user.id
+                           owner_username=current_user.username
                            )
 
             db.session.add(newLinket)
@@ -238,6 +253,44 @@ def add_new_linket():
         else:
             return redirect(url_for('dashboard_home'))
     return render_template('successforlinket.html')
+
+
+@app.route('/dashboard/linketstation/<owner>')
+@login_required
+def linket_station(owner):
+    if owner != current_user.username:
+        return redirect(url_for('dashboard_home'))
+
+    myLinkets = Linkets.query.filter_by(owner_username=current_user.username).all()
+    return render_template('linketStation.html', myLinkets=myLinkets)
+
+@app.route('/dashboard/configure/<owner>/<linket>', methods= ['GET', 'POST'])
+@login_required
+def configure_linket(owner,linket):
+    if owner != current_user.username:
+        return redirect(url_for('dashboard_home'))
+
+    myLinket = Linkets.query.filter_by(linketBare=linket).first()
+    if not myLinket:
+        return redirect(url_for('dashboard_home'))
+
+    if myLinket.owner_username != current_user.username:
+        return redirect(url_for('dashboard_home'))
+
+    if request.method == "POST" and request.form['game']:
+        print(request.form['game'])
+        if request.form['game'] == "ttt":
+            myLinket.game = 0;
+            db.session.add(myLinket)
+            db.session.commit()
+        else:
+            myLinket.game = 1;
+            db.session.add(myLinket)
+            db.session.commit()
+        return '{"status":"success"}'
+
+    info = {"linket": myLinket.linketBare, "game": myLinket.game }
+    return render_template('configureLinket.html', data = info)
 
 
 ##########~~~WebRTC: Signaling Implementation~~~###########
@@ -312,7 +365,7 @@ def link():
     return html
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port="7777", ssl_context='adhoc')
+    socketio.run(app, host="0.0.0.0", port="7777")
 
 '''
 !!!!references!!!!

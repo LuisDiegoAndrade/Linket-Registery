@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<div class="container">
+  <div class="row">
+        <div class="col align-self-center">
+           <div class="content-section">
+              <br>
+              <h3>{{current_user.username}}'s Linkets!</h3>
+              <h5 class="text-muted">Configure your Linkets here.</h5>
+              <div class="form-group">
+                {% if myLinkets %}
+                <ul class="list-group">
+                  {% for linket in myLinkets %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      <h4>[{{linket.linketBare}}]</h4>
+                      {% if linket.game | int == 0%}
+                      <span class="badge badge-primary badge-pill">Tic-Tac-Toe</span>
+                      {% else %}
+                      <span class="badge badge-primary badge-pill">2-Up</span>
+                      {% endif %}
+                      <a href="/dashboard/configure/{{current_user.username}}/{{linket.linketBare}}" class="badge badge-warning badge-pill"><i class="far fa-edit"></i></a>
+                    </li>
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <h2 class="song-name"> You have no linkets registered!</h2>
+                {% endif %}
+              </div>
+           </div>
+        </div>
+  </div>
+</div>
+
+
+
+<!--<div style='text-align: left' class="content-section">
+
+</div>-->
+
+{% endblock content %}

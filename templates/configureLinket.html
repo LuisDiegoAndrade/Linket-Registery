@@ -1,0 +1,104 @@
+{% extends "layout.html" %}
+{% block content %}
+
+
+<div class="container">
+  <div class="row">
+        <div class="col align-self-center">
+           <div class="content-section">
+              <br>
+              <h3>[Linket]</h3>
+              <h5 class="text-muted">Configure your Linkets here.</h5>
+
+                <div class="row">
+                  <div class="col-md-6">
+                    <div id="message" style="display:none" class="alert alert-info" role="alert">
+                      Linket game changed!
+                    </div>
+
+                    <form id="config">
+                      <div class="form-row">
+                        <div class="col">
+                          <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                              {% if data["game"]|int == 0 %}
+
+                              <label class="btn btn-secondary active btn-sm" id="ttt">
+                              <input type="radio" id=""
+                               name="game" value="ttt" checked> Tic-Tac-Toe
+                               </label>
+
+                               <label class="btn btn-secondary btn-sm" id="2u">
+                                 <input type="radio" id=""
+                                  name="game" value="twoup"> 2-UP
+                               </label>
+                               {% else %}
+                               <label class="btn btn-secondary btn-sm" id="ttt">
+                               <input type="radio" id=""
+                                name="game" value="ttt"> Tic-Tac-Toe
+                                </label>
+
+                                <label class="btn btn-secondary active btn-sm" id="2u">
+                                  <input type="radio" id=""
+                                   name="game" value="twoup" checked> 2-UP
+                                </label>
+                              {% endif %}
+
+
+                          </div>
+                          <input class="btn btn-warning btn-sm" name="submit" type="submit" value="Set Game">
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                  <br>
+                  <br>
+
+                    <div class="col-md-6">
+                        <button id="deleteLinket"  type="button" class="btn btn-outline-danger btn-sm">DELETE</button>
+                    </div>
+
+                </div>
+
+           </div>
+        </div>
+  </div>
+</div>
+
+
+
+<script>
+
+  window.onload = () => {
+    const URL = "http://localhost:7777/dashboard/configure/{{current_user.username}}/{{data['linket']}}";
+    let data;
+    let config = document.getElementById('config');
+    let deleteLinket = document.getElementById('deleteLinket');
+
+    //Set game for linket by making a POST request to server
+    //with the game name as the payload.
+    config.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      data = new FormData(config);
+      console.log(data.get('game'));
+      let configuration = {
+        method: "post",
+        body: data,
+      };
+
+      try {
+        let res = await fetch(URL,configuration);
+        let json = await res.json();
+        console.log(json);
+        if (json.status == "success"){
+          document.getElementById('message').style.display = "block";
+        }
+
+      } catch(e){
+        console.log(e);
+      }
+    });
+
+  }
+</script>
+
+{% endblock content %}
