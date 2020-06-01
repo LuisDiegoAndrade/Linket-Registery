@@ -63,21 +63,18 @@ class Linkets(UserMixin, db.Model):
     linketBare = db.Column(db.String(68), nullable=True)
     timeStamp = db.Column(db.DateTime, nullable=False,
         default=datetime.datetime.utcnow)
-    game = db.Column(db.String(4), nullable=False, default=0)
+    game = db.Column(db.Integer, nullable=False, default=0)
     owner_username = db.Column(db.Integer, db.ForeignKey('Users.username'), nullable=True)
     owner = db.relationship('Users', foreign_keys=owner_username)
 
 ###***** Recent app installs Table ******###
 class Downloads(UserMixin, db.Model):
-    __tablename__ = "Linkets"
+    __tablename__ = "Downloads"
     id = db.Column(db.Integer, primary_key=True)
-    linket = db.Column(db.String(68), nullable=True)
-    linketBare = db.Column(db.String(68), nullable=True)
+    fp = db.Column(db.String(54), nullable=True)
     timeStamp = db.Column(db.DateTime, nullable=False,
         default=datetime.datetime.utcnow)
-    game = db.Column(db.String(4), nullable=False, default=0)
-    owner_username = db.Column(db.Integer, db.ForeignKey('Users.username'), nullable=True)
-    owner = db.relationship('Users', foreign_keys=owner_username)
+    data = db.Column(db.String(124), nullable=True)
 
 
 #~~~~~~~~~~
@@ -293,6 +290,34 @@ def configure_linket(owner,linket):
     return render_template('configureLinket.html', data = info)
 
 
+#######~~~~~~!!!! Defered Deeplinking Implementation !!!! ~~~~~~~~~######
+
+@app.route('/linketapp/download', methods=["GET", "POST"])
+def download_page():
+    if request.method == "POST" and request.form["data"]:
+        try:
+            if request.form["pIp"]:
+                newDownload = Downloads( fp = request.form["pIp"] + request.remote_addr,
+                               data = request.form["data"]
+                               )
+
+                db.session.add(newDownload)
+                db.session.commit()
+                return '{"status": 1}'
+
+        except:
+            newDownload = Downloads( fp = request.remote_addr,
+                           data = request.form["data"]
+                           )
+
+            db.session.add(newDownload)
+            db.session.commit()
+            return '{"status": 1}'
+
+
+    return render_template('appStore.html')
+
+
 ##########~~~WebRTC: Signaling Implementation~~~###########
 
 ''' Store connections in a list for reference. '''
@@ -365,9 +390,4 @@ def link():
     return html
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port="7777")
-
-'''
-!!!!references!!!!
-re.sub(' +', ' ', 'The     quick brown    fox')
-'''
+    socketio.run(app, host="0.0.0.0", port="7778")

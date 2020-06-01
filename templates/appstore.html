@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<h3>Top Apps</h3>
+<div class="container">
+  <div class="row">
+
+        <div class="col">
+           <div class="content-section">
+              <br>
+              <h2>Linket App</h2>
+              <h5 class="text-muted">Linket App for Android.</h5>
+              <div class="form-group">
+
+                <button id="install_apk" type="button" class="btn btn-outline-dark">Download signed APK</button>
+
+              </div>
+           </div>
+        </div>
+
+        <div class="col">
+           <div class="content-section">
+              <br>
+              <h2>Linket App iOS</h2>
+              <h5 class="text-muted">Coming Soon!</h5>
+              <div class="form-group">
+
+                <button type="button" class="btn btn-outline-light">Disabled</button>
+
+              </div>
+           </div>
+        </div>
+        <div class="col">
+           <div id="info-div" class="content-section">
+
+           </div>
+        </div>
+  </div>
+</div>
+
+<!-- -->
+<script>
+  'use strict';
+
+  let peerCon = null;
+  let info = document.getElementById('info-div');
+  let pIp = null;
+
+ async function dlDownload(ipv4, target) {
+
+    let data = new FormData();
+
+    if (ipv4 != null) {
+      alert("Adding public ip to request");
+      data.append("pIp", ipv4);
+    }
+
+    data.append("data", target);
+    let url = window.location.href;
+    let config = {
+      method: "POST",
+      body: data
+    };
+
+    try {
+      let res = await fetch(url, config);
+      let json = await res.json();
+      //alert(JSON.stringify(json.status));
+      // if post request sucessful then begin app download
+      if (json.status == 1) {
+        //begin app download
+        alert("Download beggining!");
+      }
+      else {
+        window.location = window.loction.href;
+      }
+
+
+    } catch(e) {
+      alert(e);
+    }
+
+  }
+
+  async function handleNegotiationNeededEvent() {
+    try {
+      console.log("Negotiation Needed!");
+      const offer = await peerCon.createOffer();
+
+      if (peerCon.signalingState != "stable") {
+        return;
+      }
+
+      await peerCon.setLocalDescription(offer);
+      console.log("Local description set!");
+
+    } catch(err) {
+      console.log(err);
+    }
+  }
+
+  function handleICECandidateEvent(event) {
+      if (event.candidate) {
+        console.log("New ICE candidate generated!");
+        let candidateElement = document.createElement('p');
+        candidateElement.textContent = event.candidate.address;
+        info.appendChild(candidateElement);
+        info.appendChild(document.createElement('br'));
+        let parsed = event.candidate.address.split('.');
+        let params = new URLSearchParams(window.location.search);
+
+
+        if (parsed.length == 4 && (parsed[0] == "192" || parsed[0] == "172" || parsed[0] == "10") ) {
+          alert("Private IP found!");
+          // The user has a private ip (is not in a network with NAT device / firewall)
+          dlDownload(event.candidate.address, params.get("target"));
+          peerCon.close();
+          //We only want the private ipv4 address
+          //set this event handler to a no op after finding a private ipv4
+          peerCon.onicecandidate = () => { /* cool stuff here :) */ };
+          peerCon.onnegotiationneeded = () => { /* cool stuff here :) */ };
+          return;
+        }
+        dlDownload(null, params.get("target"));
+        peerCon.close();
+        //User does not have a private ipv4 address
+        //set this event handler to a no op to avoid possibly getting a ipv6 address
+        peerCon.onicecandidate = () => { /* cool stuff here :) */ };
+        peerCon.onnegotiationneeded = () => { /* cool stuff here :) */ };
+        return;
+      }
+  }
+
+  async function discover() {
+    if (peerCon) peerCon.close();
+
+    console.log("Creating peer connection ...");
+    peerCon = new RTCPeerConnection({iceServers:[]});
+    peerCon.onicecandidate = handleICECandidateEvent;
+    peerCon.onnegotiationneeded = handleNegotiationNeededEvent;
+    peerCon.createDataChannel("");
+  }
+
+  window.onload = () => {
+    let downloadBtn = document.getElementById('install_apk');
+    downloadBtn.addEventListener('click', () => {
+      let params = new URLSearchParams(window.location.search);
+
+      if (!params.get("target")) {
+        //normalDownload();
+        return;
+      }
+
+      discover();
+    });
+  };
+</script>
+
+{% endblock content %}
