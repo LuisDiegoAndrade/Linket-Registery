@@ -13,10 +13,8 @@ def is_allowed(str):
         except:
             return False
 
-
 if __name__ == '__main__':
 
-    #Try to break me here I'll give a reward ;)
     test = "#Lo"
     stripped = clean_whitespace(test)
     print(stripped)

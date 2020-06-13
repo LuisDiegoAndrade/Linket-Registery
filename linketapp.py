@@ -11,11 +11,30 @@ import json
 import re
 from Forms import SignUpForm, LoginForm
 from linketvalidator import clean_whitespace, is_allowed
+from functools import wraps
+
+# Function decorator to protect token required routes
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if "x-access-token" in request.headers:
+            token = request.headers["x-access-token"]
+        if not token:
+            return '{"status": "missing token"}'
+        try:
+            data = jwt.decode(token, app.config["SECRET_KEY"])
+            current_app_user = Users.query.filter_by(username=data["username"]).first()
+        except:
+            return '{"status": "invalid token"}'
+        return f(current_app_user, *args, **kwargs)
+    return decorated
+
 
 app = Flask(__name__)
 
 # We will allow cross origin resource sharing for certain endpoints; since
-# this is the backend for the web application and mobile application.
+# this is the "backend" for the web application and mobile application.
 CORS(app, resources = r'/api/*')
 
 # Make an instance of the SocketIO class, this is library that will help facilitate
@@ -33,7 +52,6 @@ app.config["SECRET_KEY"] = 'f91ed5f95371fd892dadab02fa26c871'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///linket.db'
 
 #Flask-Login class helper
-#Lets you "decorate" functions/routes
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -78,7 +96,7 @@ class Downloads(UserMixin, db.Model):
 
 
 #~~~~~~~~~~
-#look for a user in users table via email
+#load user
 @login_manager.user_loader
 def load_user(userInputEmail):
     return Users.query.filter_by(email=userInputEmail).first()
@@ -289,7 +307,6 @@ def configure_linket(owner,linket):
     info = {"linket": myLinket.linketBare, "game": myLinket.game }
     return render_template('configureLinket.html', data = info)
 
-
 #######~~~~~~!!!! Defered Deeplinking Implementation !!!! ~~~~~~~~~######
 
 @app.route('/linketapp/download', methods=["GET", "POST"])
@@ -370,16 +387,25 @@ def handle_msg(data):
             print("Found user!")
             send(json.dumps(data), room=user["sid"])
 
+###############~~APP Interface~~###################
+# Authenticate user, if successful create jwt token and respond with it
+# Note that we can reuse most of the login code intended to be used for the web client
+@app.route("/api/app/login", methods=["GET","POST"])
+def app_login():
+    if request.method == "POST" and request.form['email'] and request.form['password']:
+      if not Users.query.filter_by(email=request.form['email']).first():
+          # Incorrect Credentials
+          return '{"status": "invalid credentials"}'
 
-@app.route("/api/data")
-def deep_link():
-  data = {'status':200}
-  response = app.response_class(
-      response=json.dumps(data),
-      status=200,
-      mimetype='application/json'
-  )
-  return response
+      user = load_user(str(request.form['email']))
+      if not user.check_password(request.form['password']):
+          # Incorrect Credentials
+          return redirect(url_for('login'))
+
+      # Authentication successful; generate jwt token
+      token = jwt.encode({"username": user.username, "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config["SECRET_KEY"])
+      return json.dumps({"token": token.decode('UTF-8')})
+
 
 @app.route('/deeplink')
 def link():
@@ -388,6 +414,14 @@ def link():
         <a style="font-size:40px" href="linket://deeplink/startgame?with=LOoe">linket://deeplink/startgame?with=tictactoemaster</a>
     '''
     return html
+
+''' response = app.response_class(
+    response=json.dumps(data),
+    status=200,
+    mimetype='application/json'
+)
+return response
+'''
 
 if __name__ == '__main__':
     socketio.run(app, host="0.0.0.0", port="7778")
