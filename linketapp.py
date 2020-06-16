@@ -167,7 +167,7 @@ def logout():
 ##################~~~Login ~~~####################
 @app.route('/login', methods= ['GET', 'POST'])
 def login():
-    if current_user.is_authenticated:
+    if not current_user.is_authenticated:
         return redirect(url_for("dashboard_home"))
     form = LoginForm()
     if request.method == "POST":
@@ -363,6 +363,30 @@ def new_connection(data):
     )
     print(peersList)
 
+@socketio.on('New App Connection')
+def new_app_connection(t):
+    t = json.loads(t)
+    try:
+        data = jwt.decode(t["token"], app.config["SECRET_KEY"])
+        current_app_user = Users.query.filter_by(username=data["username"]).first()
+    except:
+        disconnect()
+        return
+
+    print(current_app_user.username)
+    remove_duplicate_peer(current_app_user.username)
+    peersList.append(
+        {"username": current_app_user.username, "sid": request.sid, "status": "active"}
+    )
+    send("added to peers list!");
+    print(peersList)
+
+
+@socketio.on('zeroth Block')
+def test_app_ws(data):
+    #print("YO")
+    print(data)
+    send("Does it work?")
 
 ''' Route messages to appropiate peer(s). '''
 ''' Note that the server doesn't have to know what these messages are.'''
@@ -371,6 +395,7 @@ def new_connection(data):
 @socketio.on('message')
 def handle_msg(data):
     # if somehow an unauthenticated user connects to the WS server, disconnect.
+
     if not current_user.is_authenticated:
         disconnect()
         return redirect(url_for('login'))
@@ -389,7 +414,7 @@ def handle_msg(data):
 
 ###############~~APP Interface~~###################
 # Authenticate user, if successful create jwt token and respond with it
-# Note that we can reuse most of the login code intended to be used for the web client
+# Note that we can reuse login code intended to be used for the web client
 @app.route("/api/app/login", methods=["GET","POST"])
 def app_login():
     if request.method == "POST" and request.form['email'] and request.form['password']:
@@ -404,14 +429,13 @@ def app_login():
 
       # Authentication successful; generate jwt token
       token = jwt.encode({"username": user.username, "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config["SECRET_KEY"])
-      return json.dumps({"token": token.decode('UTF-8')})
+      return json.dumps({"token": token.decode('UTF-8'), "expires": str(datetime.datetime.utcnow() + datetime.timedelta(minutes=30))})
 
 
 @app.route('/deeplink')
 def link():
     html = '''
-        <a style="font-size:40px" href="linket://deeplink/startgame?with=LOoe">linket://deeplink/startgame?with=LOoe</a><br>
-        <a style="font-size:40px" href="linket://deeplink/startgame?with=LOoe">linket://deeplink/startgame?with=tictactoemaster</a>
+        <a style="font-size:40px" href="http://54.241.167.158/linketapp">[deep link]</a><br>
     '''
     return html
 
