@@ -12,6 +12,8 @@ import re
 from Forms import SignUpForm, LoginForm
 from linketvalidator import clean_whitespace, is_allowed
 from functools import wraps
+import urllib.parse
+import random
 
 # Function decorator to protect token required routes
 def token_required(f):
@@ -39,7 +41,7 @@ CORS(app, resources = r'/api/*')
 
 # Make an instance of the SocketIO class, this is library that will help facilitate
 # implementing the WebSocket protocol
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 #Token generated using python interpreter:
 # $ python
@@ -167,7 +169,7 @@ def logout():
 ##################~~~Login ~~~####################
 @app.route('/login', methods= ['GET', 'POST'])
 def login():
-    if not current_user.is_authenticated:
+    if current_user.is_authenticated:
         return redirect(url_for("dashboard_home"))
     form = LoginForm()
     if request.method == "POST":
@@ -255,7 +257,7 @@ def add_new_linket():
             if not is_allowed(stripped):
                 return json.dumps({'status': 0})
 
-            newLinket = Linkets( linket = clean_whitespace(request.form['newlinket']),
+            newLinket = Linkets( linket = '[ {} ]'.format(clean_whitespace(request.form['newlinket'])),
                            linketBare=requestLinket,
                            owner_username=current_user.username
                            )
@@ -341,6 +343,7 @@ def download_page():
 peersList = []
 
 # This might change as the front end evolves
+# !!!!! FIXME: use token to authenticate users in the peersList
 def remove_duplicate_peer(un):
     for user in peersList:
         if user['username'] == un:
@@ -370,6 +373,7 @@ def new_app_connection(t):
         data = jwt.decode(t["token"], app.config["SECRET_KEY"])
         current_app_user = Users.query.filter_by(username=data["username"]).first()
     except:
+        print("Invlaid token! Disconnecting ...")
         disconnect()
         return
 
@@ -378,7 +382,18 @@ def new_app_connection(t):
     peersList.append(
         {"username": current_app_user.username, "sid": request.sid, "status": "active"}
     )
-    send("added to peers list!");
+    #send("added to peers list!");
+    print(peersList)
+
+@socketio.on('New Guest App Connection')
+def new_app_connection(u):
+    u = json.loads(u)
+    print(u["username"])
+    remove_duplicate_peer(u["username"])
+    peersList.append(
+        {"username": u["username"], "sid": request.sid, "status": "active"}
+    )
+    #send("added to peers list!");
     print(peersList)
 
 
@@ -396,16 +411,17 @@ def test_app_ws(data):
 def handle_msg(data):
     # if somehow an unauthenticated user connects to the WS server, disconnect.
 
-    if not current_user.is_authenticated:
-        disconnect()
-        return redirect(url_for('login'))
-
-    print("Transporting message!")
+    # FIX ME temporarily remove this authentication code
+    #if not current_user.is_authenticated:
+    #    print("disconnecting user!")
+    #    disconnect()
+    #    return redirect(url_for('login'))
     data = json.loads(data)
+    print("Transporting message to: {}".format(data))
     # look for target peer in peersList, once found pass
     # peers sid to room argument
     # if not found return an error message
-    print(data)
+
 
     for user in peersList:
         if user["username"] == data['target']:
@@ -429,13 +445,173 @@ def app_login():
 
       # Authentication successful; generate jwt token
       token = jwt.encode({"username": user.username, "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config["SECRET_KEY"])
-      return json.dumps({"token": token.decode('UTF-8'), "expires": str(datetime.datetime.utcnow() + datetime.timedelta(minutes=30))})
+      print(token.decode('UTF-8'))
+      return json.dumps({"token": token.decode('UTF-8'), "expires": str(datetime.datetime.utcnow() + datetime.timedelta(minutes=30)), "username": user.username})
 
+
+@app.route("/api/app/getowner", methods=["POST"])
+def get_owner():
+    if request.method == "POST" and request.form['linket']:
+      print("New: {}".format(urllib.parse.unquote(request.form['linket'])))
+      if not Linkets.query.filter_by(linket=urllib.parse.unquote(request.form['linket'])).first():
+          # Incorrect Credentials
+          return json.dumps({"status": 0})
+
+      linket = Linkets.query.filter_by(linket=urllib.parse.unquote(request.form['linket'])).first()
+      owner = linket.owner_username
+      print(owner)
+      return json.dumps({"status": 1, "username": owner})
+
+      # Authentication successful; generate jwt token
+      token = jwt.encode({"username": user.username, "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config["SECRET_KEY"])
+      print(token.decode('UTF-8'))
+      return json.dumps({"token": token.decode('UTF-8'), "expires": str(datetime.datetime.utcnow() + datetime.timedelta(minutes=30)), "username": user.username})
+
+@app.route("/api/app/getmypublicip")
+def get_mypublicip():
+    data = {"status": 1, "ip": request.remote_addr }
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
+
+@app.route("/api/app/linketapp/recentdownload", methods=["POST"])
+def get_recentdownload():
+    print(request.form['fp']+request.remote_addr)
+    if request.method == "POST" and request.form['fp']:
+      if not Downloads.query.filter_by(fp=request.form['fp']+request.remote_addr).first():
+          # not a recent downloader!
+          return json.dumps({"status": 0})
+    #print("{}{}".format(request.form['fp'],request.remote_addr)
+    recentDownloadData = Downloads.query.filter_by(fp=request.form['fp']+request.remote_addr).first()
+    data = {"status": 1, "data": recentDownloadData.data }
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    #db.session.delete(recentDownloadData)
+    #db.session.commit(recentDownloadData)
+    return response
+
+@app.route("/api/app/randusername")
+def rand_username():
+    words = ["bagel",
+                "batter",
+                "beans",
+                "beer",
+                "biscuit",
+                "bread",
+                "broth",
+                "burger",
+                "butter",
+                "cake",
+                "candy",
+                "caramel",
+                "caviar",
+                "cheese",
+                "chili",
+                "chocolate",
+                "cider",
+                "cobbler",
+                "cocoa",
+                "coffee",
+                "cookie",
+                "cream",
+                "croissant",
+                "crumble",
+                "cuisine",
+                "curd",
+                "dessert",
+                "dish",
+                "drink",
+                "eggs",
+                "entree",
+                "filet",
+                "fish",
+                "flour",
+                "food",
+                "glaze",
+                "grill",
+                "hamburger",
+                "ice",
+                "juice",
+                "ketchup",
+                "kitchen",
+                "lard",
+                "liquor",
+                "margarine",
+                "marinade",
+                "mayo",
+                "mayonnaise",
+                "meat",
+                "milk",
+                "mousse",
+                "muffin",
+                "mushroom",
+                "noodle",
+                "nut",
+                "oil",
+                "olive",
+                "omelette",
+                "pan",
+                "pasta",
+                "paste",
+                "pastry",
+                "pie",
+                "pizza",
+                "plate",
+                "pot",
+                "poutine",
+                "pudding",
+                "raclette",
+                "recipe",
+                "rice",
+                "salad",
+                "salsa",
+                "sandwich",
+                "sauce",
+                "seasoning",
+                "skillet",
+                "soda",
+                "soup",
+                "soy",
+                "spice",
+                "steak",
+                "stew",
+                "syrup",
+                "tartar",
+                "taste",
+                "tea",
+                "toast",
+                "vinegar",
+                "waffle",
+                "water",
+                "wheat",
+                "wine",
+                "wok",
+                "yeast",
+                "yogurt"]
+
+    name = random.choices(words, k = 2)
+    randNumber = random.randint(1,10000)
+
+    randomUsername = ("".join(name)) + str(randNumber)
+
+    data = {"status": 1, "username": randomUsername }
+    response = app.response_class(
+        response=json.dumps(data),
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 @app.route('/deeplink')
 def link():
     html = '''
-        <a style="font-size:40px" href="http://54.241.167.158/linketapp">[deep link]</a><br>
+        <a style="font-size:40px" href="http://54.241.167.158/linketapp?target=LOoe">[deep link]</a><br>
     '''
     return html
 
@@ -448,4 +624,4 @@ return response
 '''
 
 if __name__ == '__main__':
-    socketio.run(app, host="0.0.0.0", port="7778")
+    socketio.run(app, host="0.0.0.0", port="7777")
