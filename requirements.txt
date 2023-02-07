@@ -17,7 +17,7 @@ Werkzeug==1.0.0
 WTForms==2.2.1
 cffi==1.14.1
 click==7.1.2
-cryptography==3.0
+cryptography==39.0.1
 Flask==1.1.2
 Flask-Login==0.5.0
 Flask-SQLAlchemy==2.4.4
